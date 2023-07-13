@@ -14,13 +14,17 @@ import {
     Text,
     useColorModeValue,
     Link,
-    chakra
+    chakra,
+    useToast,
+    FormHelperText,
   } from '@chakra-ui/react';
   import { useState } from 'react';
-  import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
+  import { CheckIcon, ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
   import { Auth } from 'aws-amplify';
   import { v4 as uuidv4 } from 'uuid';
   import { useForm, Controller } from "react-hook-form";
+  import axios from 'axios';
+  import { AiOutlineClose } from "react-icons/ai";
 
   type SignUpParameters = {
     password: string;
@@ -28,7 +32,7 @@ import {
     phone_number: string;
     family_name: string;
     given_name: string;
-
+    ip_address: string;
   };
   
   export default function Login() {
@@ -36,12 +40,16 @@ import {
     const {
         register,
         control,
+        reset,
         watch,
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm();
 
     const [showPassword, setShowPassword] = useState(false);
+    const watchPassword = watch("password");
+    const toast = useToast();
+
 
     function formatPhoneNumber(phone_number: string) {
         const cleanPhoneNumber = phone_number.replaceAll("-", "");
@@ -49,20 +57,62 @@ import {
         return finalPhoneNumber;
     }
 
-    const onSubmit = (data: any) => {
-        console.log('came here');
+
+    async function signUp({password, email, phone_number, family_name, given_name, ip_address }: SignUpParameters) {
+        try {
+          const { user } = await Auth.signUp({
+            username:email,
+            password,
+            attributes: {
+                email,
+                phone_number,
+                family_name,
+                given_name,
+                "custom:userId": uuidv4(),
+                "custom:ipAddress": ip_address
+              },
+              clientMetadata: {
+                groupName: "Patient"
+              }
+          });
+          toast({
+            title: "Email sent!",
+            description: "Please check your inbox for a verification code and further instructions",
+            status: "success",
+            duration: 5000,
+            isClosable: true,
+            position: "top-right",
+          });
+          reset({password:"",email:"",phone_number:"",first_name:"",last_name:""});
+        } catch (error) {
+            toast({
+                title: "Something went wrong!",
+                description: "We weren't able to create your user at this time! Try again later",
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+                position: "top-right",
+              });
+          reset({password:"",email:"",phone_number:"",first_name:"",last_name:""});
+        }
+    }
+
+    const onSubmit = async (data: any) => {
+        const response = await axios.get('https://geolocation-db.com/json/');
         const email:string = data.email;
         const password:string = data.password;
         const phone_number:string = formatPhoneNumber(data.phone_number)
-        const family_name:string = data.last_name
-        const given_name:string = data.first_name
+        const family_name:string = data.last_name;
+        const given_name:string = data.first_name;
+        const ip_address:string = response.data['IPv4'];
 
         const user:SignUpParameters = {
             email,
             password,
             phone_number,
             family_name,
-            given_name
+            given_name,
+            ip_address
         }
         signUp(user);
     };
@@ -85,8 +135,8 @@ import {
           bg={useColorModeValue('white', 'gray.700')}
           boxShadow={'lg'}
           p={8}>
-          <Stack spacing={4}>
             <chakra.form onSubmit={handleSubmit(onSubmit)}>
+          <Stack spacing={6}>
             <HStack>
               <Box>
                 <FormControl 
@@ -132,9 +182,18 @@ import {
             >
               <FormLabel>Phone Number</FormLabel>
               <Input 
-                type="tel" 
+                type="tel"
+                placeholder="1234567890" 
                 {...register("phone_number", {
                     required: "Please enter your phone number",
+                    minLength: {
+                        value: 10,
+                        message: "Phone number can't be less than 10 digits",
+                      },
+                      maxLength: {
+                        value: 13,
+                        message: "Phone number can't be greater than 13 digits",
+                      },
                 })}
                />
                <FormErrorMessage>
@@ -148,10 +207,16 @@ import {
             >
               <FormLabel>Email address</FormLabel>
               <Input 
-                type="email" 
+                type="email"
+                placeholder="example@pm.com" 
                 {...register("email", {
                     required: "Please enter your email address",
-                })}
+                    pattern: {
+                      value:
+                        /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+                      message: "Email format is incorrect",
+                    },
+                  })}
               />
                 <FormErrorMessage>
                     <> {errors.email && errors.email.message}</>
@@ -183,6 +248,92 @@ import {
               <FormErrorMessage>
                 <> {errors.password && errors.password.message}</>
                </FormErrorMessage>
+               <FormHelperText >
+              <HStack>
+                {watchPassword?.length < 8 ? (
+                  <AiOutlineClose color="#E53E3E" />
+                ) : (
+                  <CheckIcon color={"green.500"} />
+                )}
+                <Text
+                  color={watchPassword?.length < 8 ? "red.500" : "green.500"}
+                >
+                  at least 8 characters
+                </Text>
+              </HStack>
+            </FormHelperText>
+            <FormHelperText >
+              <HStack>
+                {!RegExp("(.*[A-Z].*)").test(watchPassword) ? (
+                  <AiOutlineClose color="#E53E3E" />
+                ) : (
+                  <CheckIcon color={"green.500"} />
+                )}
+                <Text
+                  color={
+                    !RegExp("(.*[A-Z].*)").test(watchPassword)
+                      ? "red.500"
+                      : "green.500"
+                  }
+                >
+                  at least 1 uppercase letter
+                </Text>
+              </HStack>
+            </FormHelperText>
+            <FormHelperText >
+              <HStack>
+                {!RegExp("(.*[a-z].*)").test(watchPassword) ? (
+                  <AiOutlineClose color="#E53E3E" />
+                ) : (
+                  <CheckIcon color={"green.500"} />
+                )}
+                <Text
+                  color={
+                    !RegExp("(.*[a-z].*)").test(watchPassword)
+                      ? "red.500"
+                      : "green.500"
+                  }
+                >
+                  at least 1 lowercase letter
+                </Text>
+              </HStack>
+            </FormHelperText>
+            <FormHelperText>
+              <HStack>
+                {!RegExp("([^A-Za-z0-9])").test(watchPassword) ? (
+                  <AiOutlineClose color="#E53E3E" />
+                ) : (
+                  <CheckIcon color={"green.500"} />
+                )}
+                <Text
+                  color={
+                    !RegExp("([^A-Za-z0-9])").test(watchPassword)
+                      ? "red.500"
+                      : "green.500"
+                  }
+                >
+                  at least 1 special character
+                </Text>
+              </HStack>
+            </FormHelperText>
+            <FormHelperText>
+              <HStack>
+                {!RegExp(".*[0-9].*").test(watchPassword) ? (
+                  <AiOutlineClose color="#E53E3E" />
+                ) : (
+                  <CheckIcon color={"green.500"} />
+                )}
+                <Text
+                  color={
+                    !RegExp(".*[0-9].*").test(watchPassword)
+                      ? "red.500"
+                      : "green.500"
+                  }
+                >
+                  at least 1 number
+                </Text>
+              </HStack>
+            </FormHelperText>
             </FormControl>
             <Stack spacing={10} pt={2}>
               <Button
@@ -202,30 +353,11 @@ import {
                 Already have an account? <Link href="/" color={'blue.400'}>Login</Link>
               </Text>
             </Stack>
-            </chakra.form>
+            
           </Stack>
+          </chakra.form>
         </Box>
         </Stack>
       </Flex>
     );
   }
-  
-async function signUp({password, email, phone_number, family_name, given_name }: SignUpParameters) {
-    console.log(password, email, phone_number, family_name, given_name);
-    try {
-      const { user } = await Auth.signUp({
-        username:email,
-        password,
-        attributes: {
-            email,
-            phone_number,
-            family_name,
-            given_name,
-            "custom:userId": uuidv4(),
-          },
-      });
-      console.log(user);
-    } catch (error) {
-      console.log('error signing up:', error);
-    }
-}
