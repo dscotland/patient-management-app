@@ -33,9 +33,10 @@ import { useRouter } from "next/router";
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [loading, isLoading] = useState(false);
-
-
+    const [calledPush, setCalledPush] = useState(false);
     const { data: user, status } = useSession();
+
+
     const [loginErrorObject, showLoginError] = useState({
         isError: false,
         errorMessage: "",
@@ -43,7 +44,11 @@ import { useRouter } from "next/router";
 
     useEffect(() => {
         if (user && status === "authenticated") {
+            if (calledPush) {
+                return; // no need to call router.push() again
+            }
             router.push("/app");
+            setCalledPush(true); // <-- toggle 'true' after first redirect
         }
     }, [(status === "authenticated") && user]);
 
