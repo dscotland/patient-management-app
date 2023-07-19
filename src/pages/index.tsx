@@ -5,7 +5,6 @@ import {
     FormLabel,
     Input,
     InputGroup,
-    HStack,
     InputRightElement,
     Stack,
     Button,
@@ -23,7 +22,7 @@ import {
   import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { useForm } from 'react-hook-form';
 import { signIn, useSession } from "next-auth/react";
-import { Router, useRouter } from "next/router";
+import { useRouter } from "next/router";
   
   export default function Login() {
     const {
@@ -46,7 +45,7 @@ import { Router, useRouter } from "next/router";
         if (user && status === "authenticated") {
             router.push("/app");
         }
-    }, [status === "authenticated" && user]);
+    }, [(status === "authenticated") && user]);
 
     async function Login(username: string, password: string) {
         isLoading(true);
@@ -151,7 +150,7 @@ import { Router, useRouter } from "next/router";
             </FormControl>
             <Stack spacing={10} pt={2}>
               <Button
-                loadingText="Submitting"
+                loadingText="Signing in"
                 isLoading={loading}
                 size="lg"
                 type="submit"

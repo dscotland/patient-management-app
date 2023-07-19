@@ -19,6 +19,7 @@ import {
   import ScheduleAppointment from "./ScheduleAppointmentModal";
   import { useState, useEffect } from "react";
   import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
   
 
   export interface Appointment {
@@ -35,35 +36,49 @@ import {
 
     const [appointmentsLoading, setAppointmentsLoading] = useState(false);
 
+
+    const useListAppointments = () =>{
+        const cacheKey = ['appointments'];
+        const query = () => {
+            const result = axios.get("https://6fn0up8v71.execute-api.us-east-1.amazonaws.com/prod/appointment/listAppointmentsFn",{
+                headers: {
+                  Authorization: `Bearer ${user?.user.signInUserSession.idToken.jwtToken}`,
+                },
+              })
+              return result;
+        }
+        return useQuery(cacheKey,query,{
+            refetchOnMount: "always"
+        });
+    }
+    const { data:response, isLoading } = useListAppointments();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         setAppointmentsLoading(true)
-        axios.get("https://6fn0up8v71.execute-api.us-east-1.amazonaws.com/prod/appointment/listAppointmentsFn",{
-            headers: {
-                Authorization: `Bearer ${user?.user.signInUserSession.idToken.jwtToken}`,
-            },
-            })
-            .then((res) => res.data)
-            .then((data) => {       
-                const allAppointments = data; 
-                const upcomingAppointments = allAppointments.filter((appointment:Appointment) => new Date(appointment.date) > new Date());
-                const pastAppointments = allAppointments.filter((appointment:Appointment) => new Date(appointment.date) < new Date());
+        if(response?.status === 200){
+            let allAppointments:Appointment[] = response?.data;
+            let upcomingAppointments:Appointment[] = [];
+            let pastAppointments:Appointment[] = [];
+            if(allAppointments.length > 0){
+                upcomingAppointments = allAppointments.filter((appointment:Appointment) => new Date(appointment.date) > new Date());
+                pastAppointments = allAppointments.filter((appointment:Appointment) => new Date(appointment.date) < new Date());
                 setUpcomingAppointments(upcomingAppointments);
                 setPastAppointments(pastAppointments);
-                setAppointmentsLoading(false)
-            })
-        }, [])
+                setAppointmentsLoading(false);
+            }
+        }
+        setAppointmentsLoading(false);
+    }, [response])
 
     const [isScheduleAppointmentOpen, setScheduleAppointmentOpen] = useState(false);
-    const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([
-    ]);
+    const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   
-    const [pastAppointments, setPastAppointments] = useState<Appointment[]>([
-    ]);
+    const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
 
     type Props = {
         title: string;
-      };
+    };
       
       const CustomHeading = (props: Props) => {
         return (

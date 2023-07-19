@@ -3,7 +3,7 @@ import {
     Spinner,
 } from "@chakra-ui/react";
 
-import { signOut, useSession } from "next-auth/react";
+import {  useSession } from "next-auth/react";
 import Navbar from "./Navbar";
 
 const Layout = ({ children }: any) => {
@@ -12,7 +12,7 @@ const Layout = ({ children }: any) => {
     if (status === "loading" || !user) {
     return (
         <Center h={"100vh"}>
-        <Spinner color="blue.400" />
+            <Spinner color="blue.400" />
         </Center>
     );
     }

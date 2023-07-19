@@ -22,7 +22,7 @@ import {
   import { CheckIcon, ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
   import { Auth } from 'aws-amplify';
   import { v4 as uuidv4 } from 'uuid';
-  import { useForm, Controller } from "react-hook-form";
+  import { useForm } from "react-hook-form";
   import axios from 'axios';
   import { AiOutlineClose } from "react-icons/ai";
 
@@ -39,15 +39,14 @@ import {
 
     const {
         register,
-        control,
         reset,
         watch,
         handleSubmit,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm();
 
     const [showPassword, setShowPassword] = useState(false);
-    const watchPassword = watch("password");
+    const watchPassword = watch("password","");
     const toast = useToast();
 
 
@@ -75,15 +74,18 @@ import {
                 groupName: "Patient"
               }
           });
-          toast({
-            title: "Email sent!",
-            description: "Please check your inbox for a verification code and further instructions",
-            status: "success",
-            duration: 5000,
-            isClosable: true,
-            position: "top-right",
-          });
-          reset({password:"",email:"",phone_number:"",first_name:"",last_name:""});
+
+          if(user){
+            toast({
+                title: "Email sent!",
+                description: "Please check your inbox for a verification code and further instructions",
+                status: "success",
+                duration: 5000,
+                isClosable: true,
+                position: "top-right",
+              });
+              reset({password:"",email:"",phone_number:"",first_name:"",last_name:""});
+          }
         } catch (error) {
             toast({
                 title: "Something went wrong!",
@@ -337,7 +339,7 @@ import {
             </FormControl>
             <Stack spacing={10} pt={2}>
               <Button
-                loadingText="Submitting"
+                loadingText="Creating account"
                 type="submit"
                 size="lg"
                 bg={'blue.400'}

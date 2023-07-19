@@ -3,7 +3,6 @@ import {
   Button,
   FormControl,
   Flex,
-  Input,
   Stack,
   useColorModeValue,
   HStack,
@@ -212,6 +211,7 @@ export default function VerifyEmailForm(): JSX.Element {
                         type="submit"
                         w={"inherit"}
                         isLoading={loading}
+                        loadingText="Verifying Account"
                         _hover={{
                         bg: 'blue.500',
                     }}>
@@ -223,6 +223,7 @@ export default function VerifyEmailForm(): JSX.Element {
                         onClick={()=>{resendConfirmationCode(email)}}
                         w={"inherit"}
                         isLoading={resendLoading}
+                        loadingText="Resending Code"
                         _hover={{
                         bg: 'blue.500',
                     }}>

@@ -1,12 +1,5 @@
 import {
     Box,
-    Button,
-    Container,
-    Heading,
-    Image,
-    Spacer,
-    Text,
-    VStack,
     Center
   } from "@chakra-ui/react";
   import Head from "next/head";

@@ -6,22 +6,19 @@ import { Modal,
     ModalFooter, 
     Button, 
     ModalOverlay, 
-    Box,
     chakra,
     FormControl,
     FormErrorMessage,
     FormLabel,
-    HStack,
     Input,
     Stack,
-    Spacer,
     useToast,
     Center,
     Select,
     Textarea,
     Text
 } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import axios from "axios";
 import { useSession } from "next-auth/react";
@@ -29,6 +26,7 @@ import { useRouter } from "next/router";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { v4 as uuidv4 } from 'uuid';
+import { useQueryClient } from "@tanstack/react-query";
  
 
 interface ProfileProps {
@@ -36,20 +34,13 @@ interface ProfileProps {
     onClose: any
 }
 
-interface UserProfileData {
-    firstName: string
-    lastName: string
-    phoneNumber: string
-}
-
-export default function UserProfile(props:ProfileProps) {
+export default function ScheduleAppointment(props:ProfileProps) {
     const {
-        register,
         control,
         reset,
         getValues,
         handleSubmit,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm();
     const { data: user } = useSession();
     
@@ -62,53 +53,58 @@ export default function UserProfile(props:ProfileProps) {
         />
     );
 
-    const [userProfileData, setUserProfileData] = React.useState<UserProfileData>({firstName:"",lastName:"",phoneNumber:""});
     const [updateLoading, setUpdateLoading] = React.useState(false);
     const [startDate, setStartDate] = useState(new Date());
 
     const toast = useToast();
     const router = useRouter();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => {
-        setUpdateLoading(true)
-        axios.get("https://6fn0up8v71.execute-api.us-east-1.amazonaws.com/prod/user/getUserFn",{
-            headers: {
-              Authorization: `Bearer ${user?.user.signInUserSession.idToken.jwtToken}`,
-            },
-          })
-          .then((res) => res.data)
-          .then((data) => {         
-            setUserProfileData({firstName:data.givenName, lastName:data.familyName, phoneNumber:data.phoneNumber})
-            setUpdateLoading(false)
-          })
-      }, [props.isOpen])
-
-    const onSubmit = async (data: any) => {
-        console.log(data);
-        const result = await axios.post("https://6fn0up8v71.execute-api.us-east-1.amazonaws.com/prod/appointment/createAppointmentFn",{
+    const useAppointmentMutation = () =>{
+        const queryClient = useQueryClient()
+        const createAppointment = async (data:any) => {
+            const result = await axios.post("https://6fn0up8v71.execute-api.us-east-1.amazonaws.com/prod/appointment/createAppointmentFn",{
                 doctor: data.doctors,
                 description: data.description,
                 date: data.date_time,
                 createdAt: new Date().toISOString,
                 id: uuidv4()
-        },{
-            headers: {
-                Authorization: `Bearer ${user?.user.signInUserSession.idToken.jwtToken}`,
-                "Content-Type": "application/json",
-            }
-        })
-        if(result.status === 200){
-            toast({
-                title: "Appointment Set!",
-                description: "Don't be late!",
-                status: "success",
-                duration: 4000,
-                isClosable: false,
-                position: "top-right",
-            });
-            setTimeout(()=>{props.onClose(false); reset();},4000);
-        }
+            },{
+                headers: {
+                    Authorization: `Bearer ${user?.user.signInUserSession.idToken.jwtToken}`,
+                    "Content-Type": "application/json",
+                }
+            }).then((response)=> {
+                queryClient.invalidateQueries(['appointments']);
+                if(response.status === 200){
+                    toast({
+                        title: "Appointment Set!",
+                        description: "Don't be late!",
+                        status: "success",
+                        duration: 2000,
+                        isClosable: false,
+                        position: "top-right",
+                    });
+                    setTimeout(()=>{props.onClose(false); reset();},500);
+                } else {
+                    toast({
+                        title: "Something went wrong",
+                        description: "Your user profile could not be updated at this time. Please try again later!",
+                        status: "error",
+                        duration: 2000,
+                        isClosable: false,
+                        position: "top-right",
+                    });
+                }
+                return response
+            })
+    }
+    return {createAppointment}
+    }
+
+    const {createAppointment} = useAppointmentMutation();
+
+    const onSubmit = async (data: any) => {
+        createAppointment(data)
     };
 
     return (
@@ -119,51 +115,8 @@ export default function UserProfile(props:ProfileProps) {
           <ModalHeader>Schedule Appointment</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Text pb={5} color={"red"} fontSize={"sm"}> The patient information shown below will be referenced for your appointment. If you would like to update this information, please do so in your user profile.</Text>
+            <Text pb={5} color={"red"} fontSize={"sm"}> Your appointment will include your user information. If you would like to update this information, please do so in your user profile.</Text>
           <Stack spacing={6}>
-            <HStack>
-              <Box>
-                <FormControl 
-                    id="firstName" 
-                    isInvalid={Boolean(errors.first_name)}
-                    isReadOnly
-                >
-                  <FormLabel>First Name</FormLabel>
-                  <Input 
-                    type="text" 
-                    defaultValue={userProfileData.firstName}
-                    {...register("first_name")}
-                  />
-                </FormControl>
-              </Box>
-              <Box>
-                <FormControl 
-                    id="lastName" 
-                    isInvalid={Boolean(errors.last_name)}
-                    isReadOnly
-                >
-                  <FormLabel>Last Name</FormLabel>
-                  <Input 
-                    type="text" 
-                    defaultValue={userProfileData.lastName}
-                    {...register("last_name")}
-                  />
-                </FormControl>
-              </Box>
-            </HStack>
-            <FormControl 
-                id="phoneNumber" 
-                isInvalid={Boolean(errors.phone_number)}
-                isReadOnly
-            >
-              <FormLabel>Phone Number</FormLabel>
-              <Input 
-                type="tel"
-                placeholder="1234567890" 
-                defaultValue={userProfileData.phoneNumber}
-                {...register("phone_number")}
-               />
-            </FormControl>
             <FormControl
                 id="date_time"
                 isInvalid={Boolean(errors.date_time)}
@@ -233,7 +186,7 @@ export default function UserProfile(props:ProfileProps) {
           </ModalBody>
           <ModalFooter>
             <Center>
-                <Button bg={"blue.400"} color={"white"} isLoading={updateLoading} type="submit">Done</Button>
+                <Button loadingText="Creating appointment" bg={"blue.400"} color={"white"} isLoading={updateLoading} type="submit">Done</Button>
             </Center>
           </ModalFooter>
         </ModalContent>

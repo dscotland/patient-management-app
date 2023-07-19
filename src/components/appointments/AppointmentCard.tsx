@@ -2,9 +2,7 @@ import {
     Card,
     CardBody,
     Heading,
-    Button,
     Text,
-    Link,
     Stack,
     Center,
     Box,
@@ -15,7 +13,6 @@ import {
     IconButton,
     Tag,
   } from "@chakra-ui/react";
-  import { useRouter } from "next/router";
   import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
   import { Appointment } from "./MainAppointment";
   import moment from "moment";
@@ -29,7 +26,6 @@ import {
     createdAt,
     userId,
   }: Appointment) => {
-    const router = useRouter();
     const formattedAppointmentDate = moment(date).format("MMM Do h:mm a");
     const [appointmentMonth,appointmentDay, appointmentTime, period] =
       formattedAppointmentDate.split(" ");
@@ -84,13 +80,13 @@ import {
                 <Box pb={5}>
                   <IconButton
                     variant="unstyled"
-                    color="brandButton.500"
+                    color="blue.500"
                     aria-label="Edit Appointment"
                     icon={<EditIcon />}
                   />
                   <IconButton
                     variant="unstyled"
-                    color="brand.1000"
+                    color="red"
                     aria-label="Delete Appointment"
                     icon={<DeleteIcon />}
                   />
@@ -119,18 +115,6 @@ import {
                 {moment(date).format("dddd MMMM Do YYYY")}
               </Text>
             </Box>
-  
-            {/* <Link isExternal href={appointmentLink} w={"100%"}>
-              <Button
-                colorScheme="brandButton"
-                variant="solid"
-                bgColor={"brand.900"}
-                color={"white"}
-                w={"100%"}
-              >
-                Join Appointment
-              </Button>
-            </Link> */}
           </CardBody>
         </Stack>
       </Card>

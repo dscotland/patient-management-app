@@ -16,7 +16,6 @@ import {
   useColorMode,
   Center,
   Image,
-  Spacer
 } from '@chakra-ui/react';
 import Profile from "../user/Profile";
 import { signOut } from "next-auth/react";
@@ -36,8 +35,6 @@ const NavLink = ({ children }: { children: ReactNode }) => (
 );
 
 export default function Navbar() {
-  const { colorMode, toggleColorMode } = useColorMode();
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const [isProfileOpen, setProfileOpen] = useState(false);
   return (
     <>
